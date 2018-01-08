@@ -3,11 +3,13 @@ from keras.models          import Model
 from scipy.misc            import imread, imresize
 from sklearn.svm           import LinearSVC
 from sklearn.decomposition import PCA
-from os.path               import isfile
+from os.path               import isfile, splitext
+from flask                 import request, jsonify
+from os                    import listdir
+from io                    import BytesIO
 import numpy as np
 import pickle
 import cv2
-import os
 
 
 CLASSIFIER_MODEL    = 'models/classifier.p'
@@ -60,10 +62,10 @@ class ImageMatch(object):
 
     def __generate_training_data(self):
         features, labels = [], []
-        dirlist = os.listdir('data/train')
+        dirlist = listdir('data/train')
         images  = [f for f in dirlist if 'jpg' in f] 
         for image in images:
-            filename = os.path.splitext(image)[0]
+            filename = splitext(image)[0]
             label = ''.join(i for i in filename if not i.isdigit())
             labels.append(label)
             feature = imread('data/train/{}.jpg'.format(filename))
@@ -80,16 +82,16 @@ class ImageMatch(object):
         features = self.__decomposition.transform(features)
         self.__classifier.fit(features, labels)
    
-    def __detect_face(self, image):
+    def match(self):
+        image = request.files['image'].read()
+        image = imread(BytesIO(image)) 
         gray  = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
         faces = self.__cascade.detectMultiScale(gray)
+        if len(faces) != 1:
+            return jsonify(error='Wrong number of faces')
         x,y,w,h = faces[0]
-        return image[y:y+h,x:x+w]
-
-    def match(self, image):
-        image   = self.__detect_face(image) 
-        feature = self.__vgg16_predict(image)
+        feature = self.__vgg16_predict(image[y:y+h,x:x+w])
         feature = self.__decomposition.transform([feature])
         label   = self.__classifier.predict(feature)
-        return label[0]
+        return jsonify(label=label[0])
 

@@ -30,14 +30,21 @@ the classifier and decomposition model are stored in the
 the classifier model with new data.
 
 To perform a match, you just send an image by `POST` to
-the service.  Here are some examples based on the data that
-this comes with:
+the service.  It will only attempt a face match if there is
+one face detected. All other cases either lack the requesite
+data or are ambiguous.  In this case an error message is 
+presented, otherwise a match is attempted.  The class is 
+returned in this case, which can be one of the specifically
+defined classes or the catch-all class.
+
+Here are some examples based on the data that this comes with:
 
 ```
 curl -X POST -F 'image=@data/test/norton.jpg' http://localhost:5000/match
 curl -X POST -F 'image=@data/test/hopkins.jpg' http://localhost:5000/match
 curl -X POST -F 'image=@data/test/cruise.jpg' http://localhost:5000/match
 curl -X POST -F 'image=@data/test/roberts.jpg' http://localhost:5000/match
+curl -X POST -F 'image=@data/test/brady.jpg' http://localhost:5000/match
 ```
 
 Given the training data, the Edward Norton and Anthony Hopkins matches
